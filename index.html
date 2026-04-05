@@ -130,7 +130,7 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;overflow:hidden;use
 .bird{position:absolute;z-index:20;cursor:pointer;pointer-events:all;font-size:2.2rem;
   transition:transform .1s}
 .bird:hover{transform:scale(1.2)}
-.bird-swoop{animation:swoop 2s ease-in-out forwards}
+.bird-swoop{animation:swoop 10s ease-in-out forwards}
 @keyframes swoop{
   0%{transform:translate(0,0)}
   40%{transform:translate(var(--dx),var(--dy))}
@@ -385,8 +385,8 @@ function pat(type){
 function getLevelParams(lv) {
   return {
     fenceCount: Math.min(3 + Math.floor(lv * 0.7), 8),
-    fenceMinH: Math.min(70 + lv * 8, 160),
-    fenceMaxH: Math.min(90 + lv * 12, 200),
+    fenceMinH: Math.min((70 + lv * 8) * 5, 800),
+    fenceMaxH: Math.min((90 + lv * 12) * 5, 1000),
     fenceUpMin: Math.max(4000 - lv * 300, 1200),
     fenceUpMax: Math.max(6000 - lv * 400, 2000),
     fenceDownMin: Math.max(3000 - lv * 200, 800),
@@ -565,14 +565,14 @@ function buildScene() {
     const fx=rand(i*fenceSpacing+2,(i+1)*fenceSpacing);
     f.style.left=fx+'%';
     f.style.bottom='16%';
-    const fw=randInt(80,130);
+    const fw=randInt(160,260);
     const fh=randInt(P.fenceMinH,P.fenceMaxH);
     f.style.width=fw+'px';
     f.style.height=fh+'px';
     f.dataset.fullH=fh;
     // Build fence visuals
     const inner=document.createElement('div');inner.className='fence-inner';
-    const pcount=Math.ceil(fw/30);
+    const pcount=Math.ceil(fw/35);
     for(let j=0;j<pcount;j++){
       const fp=document.createElement('div');fp.className='fpost';
       fp.style.height='100%';fp.style.left=(j*(fw/(pcount-1)))+'px';
@@ -720,13 +720,33 @@ function spawnBird(){
       const carry=document.createElement('div');carry.className='bird-carry';
       carry.textContent=EGGS[idx].prize;
       bird.appendChild(carry);
+      // Check if all remaining eggs are stolen -> game over
+      checkBirdGameOver();
     }
-  },800);
+  },4000);
 
   // Remove bird after animation
   setTimeout(()=>{
     if(bird.parentNode)bird.remove();
-  },2200);
+  },11000);
+}
+
+function checkBirdGameOver(){
+  if(!gameActive)return;
+  const remaining=eggs.filter(e=>!e.found&&!e.stolen);
+  if(remaining.length===0&&found<12){
+    // Birds stole all remaining eggs — game over!
+    gameActive=false;
+    clearInterval(timerInterval);clearFenceTimers();clearBirdTimers();stopMusic();
+    playTone(200,0.4,'sawtooth',0.1);setTimeout(()=>playTone(150,0.5,'sawtooth',0.1),300);
+    document.getElementById('win-title').textContent='Game Over!';
+    const stolenCount=eggs.filter(e=>e.stolen&&!e.found).length;
+    document.getElementById('win-stats').innerHTML='The birds stole all remaining eggs!<br>You found <strong>'+found+'</strong> of 12 eggs before they got the rest.';
+    document.getElementById('win-score').innerHTML='Score: <strong>'+totalScore+'</strong>';
+    document.getElementById('win-btn').textContent='Try Again';
+    document.getElementById('win-btn').onclick=()=>{showLevelIntro()};
+    showScreen('win-screen');
+  }
 }
 
 // --- GAME LOGIC ---
