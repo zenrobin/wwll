@@ -5,756 +5,878 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Easter Bunny Hunt</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    overflow: hidden;
-    user-select: none;
-    background: #87CEEB;
-  }
-  .screen { display: none; position: absolute; inset: 0; }
-  .screen.active { display: flex; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;overflow:hidden;user-select:none;background:#000}
+.screen{display:none;position:absolute;inset:0}.screen.active{display:flex}
 
-  /* === START SCREEN === */
-  #start-screen {
-    flex-direction: column; align-items: center; justify-content: center;
-    background: linear-gradient(180deg, #87CEEB 0%, #b6e8a0 60%, #4a7c2e 100%);
-    text-align: center; gap: 20px;
-  }
-  #start-screen h1 {
-    font-size: 3rem; color: #5D3A1A;
-    text-shadow: 2px 2px 0 #FFD700, -1px -1px 0 #fff;
-    animation: bounce 1s ease infinite alternate;
-  }
-  @keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-14px)} }
-  #start-screen .subtitle { font-size: 1.15rem; color: #3A6B35; max-width: 420px; line-height: 1.5; }
-  .preview-eggs { display: flex; gap: 10px; justify-content: center; }
-  .preview-egg {
-    width: 40px; height: 52px;
-    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.3), inset 0 -8px 12px rgba(0,0,0,0.1);
-    animation: wobble 2s ease infinite;
-  }
-  @keyframes wobble {
-    0%,100%{transform:rotate(-5deg)} 50%{transform:rotate(5deg)}
-  }
-  .btn {
-    padding: 16px 48px; font-size: 1.4rem; border: none; border-radius: 50px;
-    cursor: pointer; font-weight: bold;
-    transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  }
-  .btn:hover { transform: scale(1.08); box-shadow: 0 6px 25px rgba(0,0,0,0.3); }
-  .btn:active { transform: scale(0.95); }
-  .btn-play { background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: white; }
+/* === START === */
+#start-screen{flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#5bb8f5 0%,#87CEEB 30%,#a8d98a 65%,#5a8a30 85%,#3d6b1e 100%);
+  text-align:center;gap:16px}
+#start-screen h1{font-size:2.8rem;color:#5D3A1A;text-shadow:2px 2px 0 #FFD700,-1px -1px 0 rgba(255,255,255,0.5);animation:bounce 1s ease infinite alternate}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+#start-screen .subtitle{font-size:1.05rem;color:#2d5a1a;max-width:440px;line-height:1.5}
+.preview-row{display:flex;gap:10px;justify-content:center;margin:8px 0}
+.prev-egg{width:32px;height:42px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+  box-shadow:0 2px 6px rgba(0,0,0,0.3);animation:wobble 2s ease infinite}
+@keyframes wobble{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.btn{padding:14px 44px;font-size:1.3rem;border:none;border-radius:50px;cursor:pointer;font-weight:bold;
+  transition:transform .2s,box-shadow .2s;box-shadow:0 4px 15px rgba(0,0,0,0.25)}
+.btn:hover{transform:scale(1.07);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
+.btn:active{transform:scale(0.95)}
+.btn-play{background:linear-gradient(135deg,#FF6B6B,#FF8E53);color:#fff}
+.btn-restart{background:linear-gradient(135deg,#4CAF50,#45B7D1);color:#fff}
+.btn-next{background:linear-gradient(135deg,#FFD700,#FFA500);color:#5D3A1A}
+.mute-btn{position:fixed;top:10px;right:10px;z-index:9999;background:rgba(0,0,0,0.5);color:#fff;
+  border:none;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer}
 
-  /* === GAME SCREEN === */
-  #game-screen {
-    flex-direction: column;
-    background: linear-gradient(180deg, #5bb8f5 0%, #87CEEB 40%, #a8d98a 65%, #4a7c2e 100%);
-  }
-  #hud {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 20px; background: rgba(255,255,255,0.88);
-    backdrop-filter: blur(6px); z-index: 100;
-    border-bottom: 3px solid #FFD700; flex-wrap: wrap; gap: 8px;
-  }
-  #hud .eggs-found { font-size: 1.1rem; color: #5D3A1A; font-weight: bold; }
-  #hud .timer { font-size: 1.1rem; color: #C0392B; font-weight: bold; }
-  .hint-btn {
-    padding: 8px 16px; background: #FFD700; border: 2px solid #DAA520;
-    border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 0.85rem;
-  }
-  .hint-btn:hover { background: #ffe44d; }
-  #basket { display: flex; flex-wrap: wrap; gap: 4px; max-width: 260px; }
-  .basket-egg-slot {
-    width: 18px; height: 23px;
-    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-    opacity: 0.25; transition: opacity 0.4s, transform 0.4s;
-    border: 1px solid rgba(0,0,0,0.15);
-  }
-  .basket-egg-slot.collected { opacity: 1; animation: collectPop 0.5s ease; }
-  @keyframes collectPop { 0%{transform:scale(0)} 50%{transform:scale(1.6)} 100%{transform:scale(1)} }
+/* === GAME === */
+#game-screen{flex-direction:column;background:#000}
+#hud{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;
+  background:rgba(255,255,255,0.9);backdrop-filter:blur(6px);z-index:100;
+  border-bottom:3px solid #FFD700;flex-wrap:wrap;gap:6px}
+#hud .info{font-size:1rem;color:#5D3A1A;font-weight:bold}
+.hint-btn{padding:6px 14px;background:#FFD700;border:2px solid #DAA520;border-radius:18px;
+  cursor:pointer;font-weight:bold;font-size:.8rem}
+#basket{display:flex;flex-wrap:wrap;gap:3px;max-width:200px}
+.bslot{width:16px;height:20px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+  opacity:.2;transition:opacity .4s,transform .4s;border:1px solid rgba(0,0,0,0.1)}
+.bslot.collected{opacity:1;animation:cpop .5s ease}
+@keyframes cpop{0%{transform:scale(0)}50%{transform:scale(1.5)}100%{transform:scale(1)}}
 
-  #game-world { flex: 1; position: relative; overflow: hidden; cursor: crosshair; }
+#game-world{flex:1;position:relative;overflow:hidden;cursor:crosshair}
 
-  /* === CSS CLOUDS === */
-  .cloud {
-    position: absolute; pointer-events: none; z-index: 2;
-    animation: cloudDrift linear infinite;
-  }
-  .cloud-puff {
-    position: absolute; background: white; border-radius: 50%;
-    box-shadow: inset -4px -4px 8px rgba(0,0,0,0.04);
-  }
-  @keyframes cloudDrift { from{transform:translateX(-200px)} to{transform:translateX(calc(100vw + 200px))} }
+/* === SKY & GROUND === */
+#sky{position:absolute;top:0;left:0;right:0;height:55%;
+  background:linear-gradient(180deg,#4aa8e8 0%,#87CEEB 50%,#b0daf5 100%);z-index:0}
+#hills{position:absolute;bottom:42%;left:0;right:0;height:15%;z-index:1;pointer-events:none}
+.hill{position:absolute;bottom:0;border-radius:50%;pointer-events:none}
+#ground{position:absolute;bottom:0;left:0;right:0;height:45%;z-index:2;
+  background:linear-gradient(180deg,#6abf45 0%,#4a9e30 20%,#3d8525 50%,#2d6b1a 100%)}
+#ground-detail{position:absolute;bottom:0;left:0;right:0;height:45%;z-index:3;pointer-events:none}
+.dirt-patch{position:absolute;border-radius:50%;background:rgba(101,67,33,0.25);pointer-events:none}
 
-  /* === GRASS === */
-  .grass-layer {
-    position: absolute; bottom: 0; left: 0; right: 0; pointer-events: none; z-index: 5;
-  }
-  #grass-back {
-    height: 80px;
-    background: 
-      repeating-linear-gradient(85deg, transparent 0px, transparent 12px, #3d8c2e 12px, #3d8c2e 14px, transparent 14px, transparent 25px),
-      linear-gradient(0deg, #2d6b1e 0%, #4a9e35 60%, transparent 100%);
-    bottom: 0;
-  }
-  #grass-mid {
-    height: 60px; bottom: 0;
-    background:
-      repeating-linear-gradient(92deg, transparent 0px, transparent 8px, #52a83a 8px, #52a83a 10px, transparent 10px, transparent 18px),
-      linear-gradient(0deg, #3a8528 0%, #5cb945 70%, transparent 100%);
-  }
-  #grass-front {
-    height: 45px; bottom: 0; z-index: 15;
-    background:
-      repeating-linear-gradient(88deg, transparent 0px, transparent 6px, #6ad44e 6px, #6ad44e 8px, transparent 8px, transparent 16px),
-      linear-gradient(0deg, #4ca832 0%, #6fd455 80%, transparent 100%);
-  }
-  .grass-blade {
-    position: absolute; bottom: 0; width: 4px; pointer-events: none; z-index: 16;
-    border-radius: 2px 2px 0 0;
-    animation: sway 3s ease-in-out infinite;
-    transform-origin: bottom center;
-  }
-  @keyframes sway { 0%,100%{transform:rotate(-5deg)} 50%{transform:rotate(5deg)} }
+/* === CLOUDS === */
+.cloud{position:absolute;pointer-events:none;z-index:1;animation:cdrift linear infinite}
+.cpuff{position:absolute;background:white;border-radius:50%;box-shadow:inset -3px -3px 6px rgba(0,0,0,0.04)}
+@keyframes cdrift{from{transform:translateX(-220px)}to{transform:translateX(calc(100vw + 220px))}}
 
-  /* === CSS EGGS === */
-  .egg {
-    position: absolute; cursor: pointer; pointer-events: all; z-index: 10;
-    transition: transform 0.2s, filter 0.2s;
-  }
-  .egg:hover { transform: scale(1.15); filter: brightness(1.1); }
-  .egg-shell {
-    width: 44px; height: 56px;
-    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-    position: relative; overflow: hidden;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.3), inset 0 -6px 10px rgba(0,0,0,0.1), inset 0 3px 6px rgba(255,255,255,0.3);
-  }
-  .egg-pattern {
-    position: absolute; inset: 0; opacity: 0.5;
-  }
+/* === GRASS === */
+.grass-row{position:absolute;left:0;right:0;z-index:6;pointer-events:none}
+.gblade{position:absolute;bottom:0;width:4px;border-radius:2px 2px 0 0;
+  animation:sway 3s ease-in-out infinite;transform-origin:bottom center}
+@keyframes sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
 
-  /* Crack animation */
-  .egg.cracking { pointer-events: none; animation: none; }
-  .egg.cracking .egg-shell { animation: crackShake 0.3s ease; }
-  @keyframes crackShake {
-    0%,100%{transform:rotate(0)} 20%{transform:rotate(-8deg)} 40%{transform:rotate(8deg)}
-    60%{transform:rotate(-5deg)} 80%{transform:rotate(5deg)}
-  }
-  .crack-half {
-    position: absolute; width: 44px; height: 28px; overflow: hidden; opacity: 0;
-  }
-  .crack-half.top { top: 0; border-radius: 22px 22px 0 0; }
-  .crack-half.bottom { bottom: 0; border-radius: 0 0 22px 22px; }
-  .egg.cracked .egg-shell { opacity: 0; transition: opacity 0.2s; }
-  .egg.cracked .crack-half {
-    opacity: 1;
-  }
-  .egg.cracked .crack-half.top {
-    animation: flyTop 0.6s ease forwards;
-  }
-  .egg.cracked .crack-half.bottom {
-    animation: flyBottom 0.6s ease forwards;
-  }
-  @keyframes flyTop {
-    0%{transform:translateY(0) rotate(0); opacity:1}
-    100%{transform:translateY(-60px) rotate(-30deg) translateX(-20px); opacity:0}
-  }
-  @keyframes flyBottom {
-    0%{transform:translateY(0) rotate(0); opacity:1}
-    100%{transform:translateY(40px) rotate(25deg) translateX(15px); opacity:0}
-  }
-  .egg-prize {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0);
-    font-size: 2rem; z-index: 12;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .egg.cracked .egg-prize { transform: translate(-50%,-50%) scale(1); }
+/* === TREES (ground obstacles) === */
+.tree{position:absolute;z-index:8;pointer-events:none}
+.tree-trunk{position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  background:linear-gradient(90deg,#5a3a1a,#8B6914,#5a3a1a);border-radius:4px}
+.tree-top{position:absolute;border-radius:50%;
+  background:radial-gradient(ellipse at 40% 35%,#5cb945,#2d8a1e 60%,#1a5c10)}
+.tree-top.dark{background:radial-gradient(ellipse at 40% 35%,#4a9e30,#1f6b15 60%,#0f4a0a)}
+.tree-blocker{position:absolute;inset:0;pointer-events:all;cursor:not-allowed;z-index:9}
 
-  .egg.hint-glow .egg-shell {
-    animation: hintPulse 0.8s ease 4;
-  }
-  @keyframes hintPulse {
-    0%,100%{box-shadow: 0 3px 10px rgba(0,0,0,0.3)} 
-    50%{box-shadow: 0 0 20px gold, 0 0 40px gold, 0 3px 10px rgba(0,0,0,0.3)}
-  }
+/* === ROCKS === */
+.rock{position:absolute;z-index:5;pointer-events:none}
+.rock-body{border-radius:40% 50% 45% 55%;
+  background:linear-gradient(135deg,#8a8a8a,#6b6b6b,#555);
+  box-shadow:inset -3px -3px 6px rgba(0,0,0,0.3),inset 2px 2px 4px rgba(255,255,255,0.15),
+  0 3px 6px rgba(0,0,0,0.3)}
 
-  /* === FENCES === */
-  .fence {
-    position: absolute; z-index: 12; pointer-events: none;
-    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .fence.hidden { transform: translateX(120%); }
-  .fence.visible { transform: translateX(0); }
-  .fence-post {
-    width: 12px; background: linear-gradient(90deg, #8B6914, #C4982A, #8B6914);
-    border-radius: 3px 3px 0 0; position: absolute; bottom: 0;
-    box-shadow: 1px 0 2px rgba(0,0,0,0.2);
-  }
-  .fence-rail {
-    position: absolute; left: 0; right: 0;
-    height: 8px; background: linear-gradient(180deg, #C4982A, #8B6914);
-    border-radius: 2px; box-shadow: 0 2px 3px rgba(0,0,0,0.2);
-  }
-  .fence-blocker {
-    position: absolute; inset: 0;
-    pointer-events: all; cursor: not-allowed; z-index: 13;
-  }
-  .fence.hidden .fence-blocker { pointer-events: none; }
+/* === FARM ANIMALS === */
+.farm-animal{position:absolute;z-index:5;font-size:1.8rem;pointer-events:none;
+  animation:animalIdle 3s ease-in-out infinite}
+@keyframes animalIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 
-  /* === SPARKLES === */
-  .sparkle {
-    position: fixed; pointer-events: none; font-size: 1.5rem; z-index: 200;
-    animation: sparkleAnim 0.8s ease forwards;
-  }
-  @keyframes sparkleAnim {
-    0%{transform:scale(0) rotate(0);opacity:1}
-    100%{transform:scale(1.5) rotate(180deg) translateY(-40px);opacity:0}
-  }
+/* === FENCES === */
+.fence{position:absolute;z-index:11;pointer-events:none;transition:height .6s cubic-bezier(.68,-0.55,.27,1.55)}
+.fence.tall{pointer-events:none}
+.fence.short{pointer-events:none}
+.fence-inner{position:absolute;bottom:0;left:0;right:0;height:100%;overflow:hidden}
+.fpost{position:absolute;bottom:0;background:linear-gradient(90deg,#7a5a1a,#B8860B,#7a5a1a);border-radius:3px 3px 0 0;
+  box-shadow:1px 0 2px rgba(0,0,0,0.2)}
+.frail{position:absolute;left:0;right:0;height:7px;
+  background:linear-gradient(180deg,#B8860B,#8B6914);border-radius:2px;
+  box-shadow:0 1px 2px rgba(0,0,0,0.2)}
+.fence-blocker{position:absolute;left:0;right:0;bottom:0;pointer-events:all;cursor:not-allowed;z-index:12}
 
-  /* === DECORATIONS === */
-  .decoration { position: absolute; pointer-events: none; z-index: 3; }
+/* === EGGS === */
+.egg{position:absolute;cursor:pointer;pointer-events:all;z-index:10;transition:transform .2s,filter .2s}
+.egg:hover{transform:scale(1.15);filter:brightness(1.1)}
+.eshell{width:40px;height:52px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;position:relative;overflow:hidden;
+  box-shadow:0 3px 8px rgba(0,0,0,0.35),inset 0 -5px 8px rgba(0,0,0,0.12),inset 0 3px 5px rgba(255,255,255,0.3)}
+.epat{position:absolute;inset:0;opacity:.45}
+.egg.cracking{pointer-events:none}
+.egg.cracking .eshell{animation:eshake .3s ease}
+@keyframes eshake{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-5deg)}80%{transform:rotate(5deg)}}
+.chalf{position:absolute;width:40px;height:26px;overflow:hidden;opacity:0}
+.chalf.top{top:0;border-radius:20px 20px 0 0}
+.chalf.bot{bottom:0;border-radius:0 0 20px 20px}
+.egg.cracked .eshell{opacity:0;transition:opacity .15s}
+.egg.cracked .chalf{opacity:1}
+.egg.cracked .chalf.top{animation:ftop .6s ease forwards}
+.egg.cracked .chalf.bot{animation:fbot .6s ease forwards}
+@keyframes ftop{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(-50px) rotate(-25deg) translateX(-15px);opacity:0}}
+@keyframes fbot{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(35px) rotate(20deg) translateX(12px);opacity:0}}
+.eprize{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:1.8rem;z-index:12;
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
+.egg.cracked .eprize{transform:translate(-50%,-50%) scale(1)}
+.egg.hglow .eshell{animation:hpulse .8s ease 4}
+@keyframes hpulse{0%,100%{box-shadow:0 3px 8px rgba(0,0,0,0.35)}50%{box-shadow:0 0 18px gold,0 0 36px gold}}
+.egg.stolen{animation:stolenAnim .8s ease forwards;pointer-events:none}
+@keyframes stolenAnim{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-200px);opacity:0}}
 
-  /* === CLUE POPUP === */
-  #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:400; }
-  #clue-popup {
-    display: none; position: fixed; top: 50%; left: 50%;
-    transform: translate(-50%, -50%); background: white;
-    border: 4px solid #FFD700; border-radius: 20px; padding: 30px;
-    z-index: 500; text-align: center; max-width: 340px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: popIn 0.4s ease;
-  }
-  @keyframes popIn { 0%{transform:translate(-50%,-50%) scale(0)} 100%{transform:translate(-50%,-50%) scale(1)} }
-  #clue-popup .egg-icon { font-size: 3rem; }
-  #clue-popup .clue-text { margin: 12px 0; font-size: 1.1rem; color: #5D3A1A; }
-  #clue-popup .clue-points { color: #E67E22; font-weight: bold; font-size: 1.2rem; }
-  #clue-popup .btn-close {
-    margin-top: 14px; padding: 10px 32px; background: #4CAF50; color: white;
-    border: none; border-radius: 20px; cursor: pointer; font-size: 1rem; font-weight: bold;
-  }
-  #clue-popup .btn-close:hover { background: #45a049; }
+/* === BIRD === */
+.bird{position:absolute;z-index:20;cursor:pointer;pointer-events:all;font-size:2.2rem;
+  transition:transform .1s}
+.bird:hover{transform:scale(1.2)}
+.bird-swoop{animation:swoop 2s ease-in-out forwards}
+@keyframes swoop{
+  0%{transform:translate(0,0)}
+  40%{transform:translate(var(--dx),var(--dy))}
+  50%{transform:translate(var(--dx),var(--dy)) scale(1.2)}
+  100%{transform:translate(calc(var(--dx) + 300px),-200px)}
+}
+.bird-carry{position:absolute;font-size:.9rem;bottom:-8px;left:50%;transform:translateX(-50%)}
 
-  /* === WIN SCREEN === */
-  #win-screen {
-    flex-direction: column; align-items: center; justify-content: center;
-    background: linear-gradient(180deg, #FFD700 0%, #FFA500 50%, #FF6347 100%);
-    text-align: center; gap: 16px;
-  }
-  #win-screen h1 { font-size: 2.6rem; color: white; text-shadow: 2px 2px 0 #C0392B; }
-  #win-screen .trophy { font-size: 5rem; animation: wobble 1s ease infinite; }
-  #win-screen .stats { font-size: 1.2rem; color: #5D3A1A; }
-  .btn-restart { background: linear-gradient(135deg, #4CAF50, #45B7D1); color: white; }
+/* === SPARKLE === */
+.sparkle{position:fixed;pointer-events:none;font-size:1.4rem;z-index:200;animation:spaAnim .8s ease forwards}
+@keyframes spaAnim{0%{transform:scale(0) rotate(0);opacity:1}100%{transform:scale(1.5) rotate(180deg) translateY(-35px);opacity:0}}
 
-  /* === FENCE STATUS === */
-  #fence-status {
-    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-    background: rgba(139,69,19,0.85); color: #FFD700; padding: 6px 18px;
-    border-radius: 14px; font-weight: bold; font-size: 0.85rem; z-index: 50;
-    transition: opacity 0.5s;
-    pointer-events: none;
-  }
+/* === POPUPS === */
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400}
+#clue-popup{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:#fff;border:4px solid #FFD700;border-radius:20px;padding:28px;z-index:500;
+  text-align:center;max-width:320px;box-shadow:0 10px 40px rgba(0,0,0,0.3);animation:popIn .4s ease}
+@keyframes popIn{0%{transform:translate(-50%,-50%) scale(0)}100%{transform:translate(-50%,-50%) scale(1)}}
+.popup-icon{font-size:2.8rem}.popup-text{margin:10px 0;font-size:1.05rem;color:#5D3A1A}
+.popup-pts{color:#E67E22;font-weight:bold;font-size:1.15rem}
+.popup-close{margin-top:12px;padding:9px 28px;background:#4CAF50;color:#fff;border:none;
+  border-radius:18px;cursor:pointer;font-size:.95rem;font-weight:bold}
 
-  @media (max-width: 600px) {
-    #start-screen h1 { font-size: 2rem; }
-    .btn { padding: 12px 36px; font-size: 1.1rem; }
-    #clue-popup { max-width: 280px; padding: 20px; }
-    .egg-shell { width: 36px; height: 46px; }
-  }
+/* === LEVEL SCREEN === */
+#level-screen{flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#5bb8f5 0%,#a8d98a 100%);text-align:center;gap:14px}
+#level-screen h1{font-size:2.4rem;color:#5D3A1A;text-shadow:2px 2px 0 #FFD700}
+#level-screen .linfo{font-size:1.1rem;color:#2d5a1a;max-width:400px;line-height:1.5}
+
+/* === WIN === */
+#win-screen{flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#FFD700 0%,#FFA500 50%,#FF6347 100%);text-align:center;gap:14px}
+#win-screen h1{font-size:2.4rem;color:#fff;text-shadow:2px 2px 0 #C0392B}
+#win-screen .trophy{font-size:4.5rem;animation:wobble 1s ease infinite}
+#win-screen .stats{font-size:1.1rem;color:#5D3A1A}
+
+/* === STATUS TOAST === */
+#toast{position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,0.7);color:#FFD700;padding:5px 16px;border-radius:12px;
+  font-weight:bold;font-size:.8rem;z-index:50;pointer-events:none;
+  transition:opacity .4s}
+
+@media(max-width:600px){
+  #start-screen h1{font-size:2rem}.btn{padding:10px 30px;font-size:1.1rem}
+  #clue-popup{max-width:260px;padding:18px}.eshell{width:32px;height:42px}
+}
 </style>
 </head>
 <body>
+<button class="mute-btn" id="mute-btn" onclick="toggleMute()">🔊</button>
 
-<!-- START SCREEN -->
+<!-- START -->
 <div id="start-screen" class="screen active">
-  <div class="preview-eggs">
-    <div class="preview-egg" style="background:linear-gradient(135deg,#FF6B6B,#ff4757);animation-delay:0s"></div>
-    <div class="preview-egg" style="background:linear-gradient(135deg,#FFD93D,#f0932b);animation-delay:0.3s"></div>
-    <div class="preview-egg" style="background:linear-gradient(135deg,#6BCB77,#26de81);animation-delay:0.6s"></div>
-    <div class="preview-egg" style="background:linear-gradient(135deg,#4D96FF,#3867d6);animation-delay:0.9s"></div>
-    <div class="preview-egg" style="background:linear-gradient(135deg,#C77DFF,#8854d0);animation-delay:1.2s"></div>
+  <div class="preview-row">
+    <div class="prev-egg" style="background:linear-gradient(135deg,#FF6B6B,#ff4757)"></div>
+    <div class="prev-egg" style="background:linear-gradient(135deg,#FFD93D,#f0932b);animation-delay:.2s"></div>
+    <div class="prev-egg" style="background:linear-gradient(135deg,#6BCB77,#26de81);animation-delay:.4s"></div>
+    <div class="prev-egg" style="background:linear-gradient(135deg,#4D96FF,#3867d6);animation-delay:.6s"></div>
+    <div class="prev-egg" style="background:linear-gradient(135deg,#C77DFF,#8854d0);animation-delay:.8s"></div>
   </div>
   <h1>The Easter Bunny Hunt</h1>
-  <p class="subtitle">
-    Find all <strong>12 colorful eggs</strong> hidden in the garden!
-    Click them to crack them open and discover the prize inside.
-    Watch out for the fences — they move to block your way!
-  </p>
-  <button class="btn btn-play" onclick="startGame()">Start the Hunt!</button>
+  <p class="subtitle">Find all 12 colorful eggs hidden in the garden! Crack them open to discover prizes.
+    Watch out for fences and trees — and sneaky birds that steal your eggs! 10 levels of increasing challenge await!</p>
+  <button class="btn btn-play" onclick="initGame()">Start the Hunt!</button>
 </div>
 
-<!-- GAME SCREEN -->
+<!-- LEVEL INTRO -->
+<div id="level-screen" class="screen">
+  <h1 id="level-title">Level 1</h1>
+  <p class="linfo" id="level-desc"></p>
+  <button class="btn btn-next" onclick="startLevel()">Go!</button>
+</div>
+
+<!-- GAME -->
 <div id="game-screen" class="screen">
   <div id="hud">
-    <span class="eggs-found">Eggs: <span id="count">0</span> / 12</span>
+    <span class="info">Level <span id="hud-level">1</span></span>
+    <span class="info">Eggs: <span id="count">0</span>/12</span>
     <div id="basket"></div>
+    <span class="info">Score: <span id="hud-score">0</span></span>
     <button class="hint-btn" onclick="useHint()">Hint (<span id="hints-left">3</span>)</button>
-    <span class="timer">Time: <span id="timer">0:00</span></span>
+    <span class="info">⏱ <span id="timer">0:00</span></span>
   </div>
   <div id="game-world">
-    <div id="fence-status">Fences incoming...</div>
-    <div id="grass-back" class="grass-layer"></div>
-    <div id="grass-mid" class="grass-layer"></div>
-    <div id="grass-front" class="grass-layer"></div>
+    <div id="sky"></div>
+    <div id="hills"></div>
+    <div id="ground"></div>
+    <div id="ground-detail"></div>
+    <div id="toast"></div>
   </div>
 </div>
 
-<!-- Clue popup -->
+<!-- CLUE POPUP -->
 <div id="overlay" onclick="closeClue()"></div>
 <div id="clue-popup">
-  <div class="egg-icon" id="clue-egg-icon"></div>
-  <div class="clue-text" id="clue-text"></div>
-  <div class="clue-points" id="clue-points"></div>
-  <button class="btn-close" onclick="closeClue()">Awesome!</button>
+  <div class="popup-icon" id="popup-icon"></div>
+  <div class="popup-text" id="popup-text"></div>
+  <div class="popup-pts" id="popup-pts"></div>
+  <button class="popup-close" onclick="closeClue()">Awesome!</button>
 </div>
 
-<!-- WIN SCREEN -->
+<!-- WIN -->
 <div id="win-screen" class="screen">
   <div class="trophy">🏆</div>
-  <h1>You Found Them All!</h1>
+  <h1 id="win-title">Level Complete!</h1>
   <p class="stats" id="win-stats"></p>
   <p class="stats" id="win-score"></p>
-  <button class="btn btn-restart" onclick="restartGame()">Play Again!</button>
+  <button class="btn btn-next" id="win-btn" onclick="nextLevel()">Next Level</button>
 </div>
 
 <script>
 // ============================================================
-//  THE EASTER BUNNY HUNT - GAME ENGINE
+// THE EASTER BUNNY HUNT — FULL GAME ENGINE
 // ============================================================
 
-const EGG_CONFIGS = [
-  { color: '#FF6B6B', gradient: 'linear-gradient(135deg,#FF6B6B,#ff4757)', pattern: 'stripes', prize: '🍬', name: 'Candy' },
-  { color: '#FFD93D', gradient: 'linear-gradient(135deg,#FFD93D,#f0932b)', pattern: 'dots', prize: '🐰', name: 'Bunny' },
-  { color: '#6BCB77', gradient: 'linear-gradient(135deg,#6BCB77,#26de81)', pattern: 'zigzag', prize: '🍫', name: 'Chocolate' },
-  { color: '#4D96FF', gradient: 'linear-gradient(135deg,#4D96FF,#3867d6)', pattern: 'stripes', prize: '🧸', name: 'Teddy Bear' },
-  { color: '#FF6FB7', gradient: 'linear-gradient(135deg,#FF6FB7,#e84393)', pattern: 'dots', prize: '🎀', name: 'Ribbon' },
-  { color: '#C77DFF', gradient: 'linear-gradient(135deg,#C77DFF,#8854d0)', pattern: 'zigzag', prize: '🌟', name: 'Star' },
-  { color: '#45B7D1', gradient: 'linear-gradient(135deg,#45B7D1,#0fb9b1)', pattern: 'stripes', prize: '🎪', name: 'Toy' },
-  { color: '#F97316', gradient: 'linear-gradient(135deg,#F97316,#e17055)', pattern: 'dots', prize: '🐥', name: 'Chick' },
-  { color: '#EC4899', gradient: 'linear-gradient(135deg,#EC4899,#fd79a8)', pattern: 'zigzag', prize: '💝', name: 'Heart' },
-  { color: '#8B5CF6', gradient: 'linear-gradient(135deg,#8B5CF6,#6c5ce7)', pattern: 'stripes', prize: '🎵', name: 'Music Box' },
-  { color: '#14B8A6', gradient: 'linear-gradient(135deg,#14B8A6,#00b894)', pattern: 'dots', prize: '🦄', name: 'Unicorn' },
-  { color: '#F59E0B', gradient: 'linear-gradient(135deg,#F59E0B,#fdcb6e)', pattern: 'zigzag', prize: '👑', name: 'Crown' },
+// --- AUDIO ENGINE (Web Audio API) ---
+let audioCtx = null;
+let muted = false;
+let musicOsc = null, musicGain = null, musicPlaying = false;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function toggleMute() {
+  muted = !muted;
+  document.getElementById('mute-btn').textContent = muted ? '🔇' : '🔊';
+  if (musicGain) musicGain.gain.value = muted ? 0 : 0.08;
+}
+
+function playTone(freq, dur, type, vol) {
+  if (muted || !audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type || 'sine';
+  o.frequency.value = freq;
+  g.gain.value = vol || 0.1;
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + dur);
+}
+
+function sfxClick() { playTone(800, 0.08, 'square', 0.06); }
+function sfxCrack() {
+  playTone(200, 0.15, 'sawtooth', 0.08);
+  setTimeout(() => playTone(350, 0.1, 'square', 0.06), 80);
+}
+function sfxPrize() {
+  playTone(523, 0.12, 'sine', 0.1);
+  setTimeout(() => playTone(659, 0.12, 'sine', 0.1), 100);
+  setTimeout(() => playTone(784, 0.2, 'sine', 0.12), 200);
+}
+function sfxBird() { playTone(1200, 0.08, 'sine', 0.07); setTimeout(() => playTone(900, 0.12, 'sine', 0.07), 80); }
+function sfxBirdCatch() { playTone(500, 0.1, 'square', 0.08); setTimeout(() => playTone(700, 0.15, 'sine', 0.1), 100); }
+function sfxFence() { playTone(150, 0.2, 'sawtooth', 0.04); }
+function sfxLevelUp() {
+  [523,659,784,1047].forEach((f,i) => setTimeout(() => playTone(f, 0.2, 'sine', 0.1), i * 120));
+}
+function sfxWin() {
+  [523,659,784,1047,784,1047,1319].forEach((f,i) => setTimeout(() => playTone(f, 0.25, 'sine', 0.12), i * 150));
+}
+function sfxHint() { playTone(440, 0.15, 'triangle', 0.08); setTimeout(() => playTone(660, 0.2, 'triangle', 0.08), 120); }
+
+function startMusic() {
+  if (!audioCtx || musicPlaying) return;
+  musicPlaying = true;
+  // Simple looping melody using oscillator
+  const notes = [262,294,330,349,392,349,330,294,262,330,392,440,392,330,294,262];
+  let noteIdx = 0;
+  function playNext() {
+    if (!musicPlaying) return;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'triangle';
+    o.frequency.value = notes[noteIdx % notes.length];
+    g.gain.value = muted ? 0 : 0.04;
+    musicGain = g;
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + 0.5);
+    noteIdx++;
+    setTimeout(playNext, 500);
+  }
+  playNext();
+}
+function stopMusic() { musicPlaying = false; }
+
+// --- GAME CONFIG ---
+const EGGS = [
+  {color:'#FF6B6B',grad:'linear-gradient(135deg,#FF6B6B,#ff4757)',pat:'stripes',prize:'🍬',name:'Candy'},
+  {color:'#FFD93D',grad:'linear-gradient(135deg,#FFD93D,#f0932b)',pat:'dots',prize:'🐰',name:'Bunny'},
+  {color:'#6BCB77',grad:'linear-gradient(135deg,#6BCB77,#26de81)',pat:'zigzag',prize:'🍫',name:'Chocolate'},
+  {color:'#4D96FF',grad:'linear-gradient(135deg,#4D96FF,#3867d6)',pat:'stripes',prize:'🧸',name:'Teddy Bear'},
+  {color:'#FF6FB7',grad:'linear-gradient(135deg,#FF6FB7,#e84393)',pat:'dots',prize:'🎀',name:'Ribbon'},
+  {color:'#C77DFF',grad:'linear-gradient(135deg,#C77DFF,#8854d0)',pat:'zigzag',prize:'🌟',name:'Star'},
+  {color:'#45B7D1',grad:'linear-gradient(135deg,#45B7D1,#0fb9b1)',pat:'stripes',prize:'🎪',name:'Toy'},
+  {color:'#F97316',grad:'linear-gradient(135deg,#F97316,#e17055)',pat:'dots',prize:'🐥',name:'Chick'},
+  {color:'#EC4899',grad:'linear-gradient(135deg,#EC4899,#fd79a8)',pat:'zigzag',prize:'💝',name:'Heart'},
+  {color:'#8B5CF6',grad:'linear-gradient(135deg,#8B5CF6,#6c5ce7)',pat:'stripes',prize:'🎵',name:'Music Box'},
+  {color:'#14B8A6',grad:'linear-gradient(135deg,#14B8A6,#00b894)',pat:'dots',prize:'🦄',name:'Unicorn'},
+  {color:'#F59E0B',grad:'linear-gradient(135deg,#F59E0B,#fdcb6e)',pat:'zigzag',prize:'👑',name:'Crown'},
 ];
 
 const CLUES = [
-  { text: "The early bird catches the worm... and this candy!", points: 10 },
-  { text: "A bunny was hiding this one — hop hop!", points: 15 },
-  { text: "Chocolate! The best Easter treat of all!", points: 20 },
-  { text: "A cuddly teddy bear was inside!", points: 15 },
-  { text: "A pretty ribbon — how fancy!", points: 25 },
-  { text: "You found a shining star!", points: 10 },
-  { text: "A toy surprise! How exciting!", points: 20 },
-  { text: "A baby chick! Peep peep!", points: 30 },
-  { text: "A heart full of love for Easter!", points: 15 },
-  { text: "A music box that plays a springtime tune!", points: 20 },
-  { text: "A magical unicorn — so rare!", points: 25 },
-  { text: "A golden crown for the champion egg hunter!", points: 50 },
+  {text:"Sweet candy for the quick hunter!",pts:10},
+  {text:"A bunny was hiding this one — hop hop!",pts:15},
+  {text:"Chocolate! The best Easter treat!",pts:20},
+  {text:"A cuddly teddy bear was inside!",pts:15},
+  {text:"A pretty ribbon — how fancy!",pts:25},
+  {text:"You found a shining star!",pts:10},
+  {text:"A toy surprise! How exciting!",pts:20},
+  {text:"A baby chick! Peep peep!",pts:30},
+  {text:"A heart full of Easter love!",pts:15},
+  {text:"A music box playing spring tunes!",pts:20},
+  {text:"A magical unicorn — so rare!",pts:25},
+  {text:"A golden crown for the champion!",pts:50},
 ];
 
-let eggs = [];
-let fences = [];
-let found = 0;
-let score = 0;
-let hintsLeft = 3;
-let timerInterval = null;
-let fenceInterval = null;
-let seconds = 0;
-let gameActive = false;
+const LEVEL_DESCS = [
+  "A gentle start in the garden. Find all 12 eggs!",
+  "The fences are getting taller... and a bit quicker!",
+  "Watch out! Birds are circling the garden!",
+  "More fences, faster movement. Stay sharp!",
+  "Trees are bigger now, blocking your view!",
+  "Birds are hungrier and fences trickier!",
+  "The garden is crowded — rocks and animals everywhere!",
+  "Lightning-fast fences and bold birds!",
+  "Can you handle the chaos? Almost everything moves!",
+  "The ULTIMATE hunt! Only the best egg hunters survive!"
+];
 
-function rand(min, max) { return Math.random() * (max - min) + min; }
-function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-function formatTime(s) {
-  const m = Math.floor(s / 60);
-  return m + ':' + (s % 60).toString().padStart(2, '0');
-}
+// --- GAME STATE ---
+let eggs=[], fenceEls=[], fenceTimers=[], birdTimers=[];
+let found=0, score=0, totalScore=0, hintsLeft=3, seconds=0, gameActive=false;
+let currentLevel=1, timerInterval=null;
+let stolenEggs = []; // eggs stolen by birds
 
-function getPattern(type, color) {
-  if (type === 'stripes') {
-    return `repeating-linear-gradient(0deg, transparent 0px, transparent 6px, rgba(255,255,255,0.4) 6px, rgba(255,255,255,0.4) 10px)`;
-  } else if (type === 'dots') {
-    return `radial-gradient(circle 4px at 30% 25%, rgba(255,255,255,0.5) 100%, transparent 100%),
-            radial-gradient(circle 4px at 70% 50%, rgba(255,255,255,0.5) 100%, transparent 100%),
-            radial-gradient(circle 4px at 30% 75%, rgba(255,255,255,0.5) 100%, transparent 100%)`;
-  } else {
-    return `repeating-linear-gradient(135deg, transparent 0px, transparent 5px, rgba(255,255,255,0.35) 5px, rgba(255,255,255,0.35) 8px, transparent 8px, transparent 13px)`;
-  }
+// --- HELPERS ---
+function rand(a,b){return Math.random()*(b-a)+a}
+function randInt(a,b){return Math.floor(rand(a,b+1))}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function fmt(s){return Math.floor(s/60)+':'+(s%60).toString().padStart(2,'0')}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(()=>t.style.opacity='0',2000)}
+function pat(type){
+  if(type==='stripes')return 'repeating-linear-gradient(0deg,transparent 0px,transparent 5px,rgba(255,255,255,0.4) 5px,rgba(255,255,255,0.4) 9px)';
+  if(type==='dots')return 'radial-gradient(circle 3px at 30% 25%,rgba(255,255,255,0.5) 100%,transparent 100%),radial-gradient(circle 3px at 70% 50%,rgba(255,255,255,0.5) 100%,transparent 100%),radial-gradient(circle 3px at 30% 75%,rgba(255,255,255,0.5) 100%,transparent 100%)';
+  return 'repeating-linear-gradient(135deg,transparent 0px,transparent 4px,rgba(255,255,255,0.35) 4px,rgba(255,255,255,0.35) 7px,transparent 7px,transparent 11px)';
 }
 
-function createCloud(world) {
-  const cloud = document.createElement('div');
-  cloud.className = 'cloud';
-  const baseSize = rand(60, 140);
-  cloud.style.width = baseSize + 'px';
-  cloud.style.height = (baseSize * 0.5) + 'px';
-  cloud.style.top = rand(3, 22) + '%';
-  cloud.style.animationDuration = rand(25, 50) + 's';
-  cloud.style.animationDelay = rand(0, 20) + 's';
-  
-  const puffs = [
-    { x: 0.1, y: 0.3, s: 0.6 },
-    { x: 0.3, y: 0.1, s: 0.8 },
-    { x: 0.5, y: 0.2, s: 1.0 },
-    { x: 0.7, y: 0.15, s: 0.7 },
-    { x: 0.4, y: 0.4, s: 0.9 },
-    { x: 0.6, y: 0.35, s: 0.65 },
-  ];
-  puffs.forEach(p => {
-    const puff = document.createElement('div');
-    puff.className = 'cloud-puff';
-    const size = baseSize * 0.4 * p.s;
-    puff.style.width = size + 'px';
-    puff.style.height = size + 'px';
-    puff.style.left = (p.x * baseSize) + 'px';
-    puff.style.top = (p.y * baseSize * 0.5) + 'px';
-    cloud.appendChild(puff);
-  });
-  world.appendChild(cloud);
+// --- LEVEL PARAMS ---
+function getLevelParams(lv) {
+  return {
+    fenceCount: Math.min(3 + Math.floor(lv * 0.7), 8),
+    fenceMinH: Math.min(70 + lv * 8, 160),
+    fenceMaxH: Math.min(90 + lv * 12, 200),
+    fenceUpMin: Math.max(4000 - lv * 300, 1200),
+    fenceUpMax: Math.max(6000 - lv * 400, 2000),
+    fenceDownMin: Math.max(3000 - lv * 200, 800),
+    fenceDownMax: Math.max(5000 - lv * 250, 1500),
+    treesAsObstacles: lv >= 3,
+    treeCount: Math.min(2 + Math.floor(lv * 0.5), 6),
+    birdEnabled: lv >= 3,
+    birdIntervalMin: Math.max(12000 - lv * 800, 4000),
+    birdIntervalMax: Math.max(18000 - lv * 1000, 7000),
+    rockCount: Math.min(2 + Math.floor(lv * 0.4), 6),
+    animalCount: Math.min(1 + Math.floor(lv * 0.3), 4),
+    hintsAvail: Math.max(4 - Math.floor(lv / 3), 1),
+  };
 }
 
-function createGrassBlades(world) {
-  for (let i = 0; i < 30; i++) {
-    const blade = document.createElement('div');
-    blade.className = 'grass-blade';
-    blade.style.left = rand(0, 100) + '%';
-    blade.style.height = rand(20, 55) + 'px';
-    blade.style.background = `linear-gradient(0deg, #3a8528, ${['#5cb945','#4ca832','#6fd455','#3d8c2e'][randInt(0,3)]})`;
-    blade.style.animationDelay = rand(0, 2) + 's';
-    blade.style.animationDuration = rand(2, 4) + 's';
-    world.appendChild(blade);
-  }
-}
-
-function createFence(world, x, width, height) {
-  const fence = document.createElement('div');
-  fence.className = 'fence hidden';
-  fence.style.left = x + '%';
-  fence.style.bottom = '30px';
-  fence.style.width = width + 'px';
-  fence.style.height = height + 'px';
-
-  const postCount = Math.ceil(width / 35);
-  for (let i = 0; i < postCount; i++) {
-    const post = document.createElement('div');
-    post.className = 'fence-post';
-    post.style.height = height + 'px';
-    post.style.left = (i * (width / (postCount - 1))) + 'px';
-    fence.appendChild(post);
-  }
-  const rail1 = document.createElement('div');
-  rail1.className = 'fence-rail';
-  rail1.style.top = '15%';
-  fence.appendChild(rail1);
-  const rail2 = document.createElement('div');
-  rail2.className = 'fence-rail';
-  rail2.style.top = '55%';
-  fence.appendChild(rail2);
-
-  const blocker = document.createElement('div');
-  blocker.className = 'fence-blocker';
-  fence.appendChild(blocker);
-
-  world.appendChild(fence);
-  return fence;
-}
-
+// --- SCENE BUILDER ---
 function buildScene() {
   const world = document.getElementById('game-world');
-  // Keep grass layers, clear dynamic content
-  const grassBack = document.getElementById('grass-back');
-  const grassMid = document.getElementById('grass-mid');
-  const grassFront = document.getElementById('grass-front');
-  const fenceStatus = document.getElementById('fence-status');
+  // Preserve fixed children
+  const sky = document.getElementById('sky');
+  const hills = document.getElementById('hills');
+  const ground = document.getElementById('ground');
+  const gdetail = document.getElementById('ground-detail');
+  const toastEl = document.getElementById('toast');
   world.innerHTML = '';
-  world.appendChild(fenceStatus);
-  world.appendChild(grassBack);
-  world.appendChild(grassMid);
-  world.appendChild(grassFront);
+  [sky,hills,ground,gdetail,toastEl].forEach(e => world.appendChild(e));
+
+  const P = getLevelParams(currentLevel);
+
+  // Hills
+  hills.innerHTML = '';
+  for(let i=0;i<4;i++){
+    const h=document.createElement('div');h.className='hill';
+    h.style.width=rand(20,40)+'%';h.style.height=rand(60,120)+'px';
+    h.style.left=rand(-5,85)+'%';
+    h.style.background=['#5cb945','#4a9e30','#3d8525','#6abf45'][i%4];
+    h.style.opacity='0.6';
+    hills.appendChild(h);
+  }
+
+  // Ground details (dirt patches)
+  gdetail.innerHTML = '';
+  for(let i=0;i<8;i++){
+    const d=document.createElement('div');d.className='dirt-patch';
+    d.style.width=rand(30,80)+'px';d.style.height=rand(15,30)+'px';
+    d.style.left=rand(2,90)+'%';d.style.bottom=rand(2,30)+'%';
+    gdetail.appendChild(d);
+  }
 
   // Clouds
-  for (let i = 0; i < 5; i++) createCloud(world);
+  for(let i=0;i<5;i++){
+    const c=document.createElement('div');c.className='cloud';
+    const sz=rand(70,150);
+    c.style.width=sz+'px';c.style.height=(sz*.45)+'px';
+    c.style.top=rand(2,20)+'%';
+    c.style.animationDuration=rand(28,55)+'s';
+    c.style.animationDelay=rand(0,20)+'s';
+    [{x:.1,y:.3,s:.6},{x:.3,y:.1,s:.8},{x:.5,y:.15,s:1},{x:.7,y:.2,s:.7},{x:.4,y:.35,s:.85}].forEach(p=>{
+      const pf=document.createElement('div');pf.className='cpuff';
+      const ps=sz*.4*p.s;
+      pf.style.width=ps+'px';pf.style.height=ps+'px';
+      pf.style.left=(p.x*sz)+'px';pf.style.top=(p.y*sz*.45)+'px';
+      c.appendChild(pf);
+    });
+    world.appendChild(c);
+  }
 
   // Sun
-  const sun = document.createElement('div');
-  sun.className = 'decoration';
-  sun.textContent = '☀️';
-  sun.style.fontSize = '3.5rem';
-  sun.style.top = '4%';
-  sun.style.right = '6%';
+  const sun=document.createElement('div');sun.className='decoration';
+  sun.textContent='☀️';sun.style.fontSize='3rem';sun.style.top='3%';sun.style.right='5%';sun.style.position='absolute';sun.style.zIndex='1';
   world.appendChild(sun);
 
-  // Decorations: trees, flowers, bushes
-  const decs = [
-    { emoji: '🌳', count: 5, minX: 2, maxX: 92, minY: 18, maxY: 55, size: '3.2rem' },
-    { emoji: '🌷', count: 8, minX: 2, maxX: 95, minY: 50, maxY: 78, size: '1.6rem' },
-    { emoji: '🌻', count: 4, minX: 5, maxX: 90, minY: 40, maxY: 70, size: '1.8rem' },
-    { emoji: '🌼', count: 6, minX: 3, maxX: 95, minY: 55, maxY: 80, size: '1.3rem' },
-    { emoji: '🌿', count: 6, minX: 0, maxX: 95, minY: 50, maxY: 78, size: '2rem' },
-    { emoji: '🍄', count: 3, minX: 10, maxX: 85, minY: 60, maxY: 78, size: '1.4rem' },
-    { emoji: '🐰', count: 2, minX: 5, maxX: 90, minY: 55, maxY: 75, size: '1.8rem' },
-    { emoji: '🐥', count: 2, minX: 10, maxX: 85, minY: 60, maxY: 78, size: '1.3rem' },
-  ];
-  decs.forEach(d => {
-    for (let i = 0; i < d.count; i++) {
-      const el = document.createElement('div');
-      el.className = 'decoration';
-      el.textContent = d.emoji;
-      el.style.fontSize = d.size;
-      el.style.left = rand(d.minX, d.maxX) + '%';
-      el.style.top = rand(d.minY, d.maxY) + '%';
+  // Ground-level decorations (flowers etc)
+  const groundY = () => rand(58, 82); // percentage from top = on the ground area
+  [{e:'🌷',n:6,sz:'1.4rem'},{e:'🌻',n:3,sz:'1.6rem'},{e:'🌼',n:5,sz:'1.2rem'},{e:'🌿',n:5,sz:'1.6rem'},{e:'🍄',n:2,sz:'1.2rem'}].forEach(d=>{
+    for(let i=0;i<d.n;i++){
+      const el=document.createElement('div');el.className='decoration';el.style.position='absolute';
+      el.textContent=d.e;el.style.fontSize=d.sz;
+      el.style.left=rand(2,95)+'%';el.style.top=groundY()+'%';el.style.zIndex='4';
       world.appendChild(el);
     }
   });
 
+  // Rocks
+  for(let i=0;i<P.rockCount;i++){
+    const r=document.createElement('div');r.className='rock';
+    r.style.left=rand(3,90)+'%';r.style.top=rand(62,80)+'%';
+    const rb=document.createElement('div');rb.className='rock-body';
+    const rw=rand(20,45);rb.style.width=rw+'px';rb.style.height=(rw*rand(0.5,0.8))+'px';
+    r.appendChild(rb);world.appendChild(r);
+  }
+
+  // Farm animals
+  const animals=['🐔','🐄','🐑','🐖','🐓'];
+  for(let i=0;i<P.animalCount;i++){
+    const a=document.createElement('div');a.className='farm-animal';
+    a.textContent=animals[i%animals.length];
+    a.style.left=rand(5,90)+'%';a.style.top=rand(60,78)+'%';
+    a.style.animationDelay=rand(0,2)+'s';
+    a.style.zIndex='5';
+    world.appendChild(a);
+  }
+
   // Grass blades
-  createGrassBlades(world);
-
-  // Place 12 eggs
-  eggs = [];
-  const usedPos = [];
-  for (let i = 0; i < 12; i++) {
-    let x, y, ok;
-    let attempts = 0;
-    do {
-      x = rand(4, 88);
-      y = rand(28, 75);
-      ok = !usedPos.some(p => Math.abs(p.x - x) < 9 && Math.abs(p.y - y) < 9);
-      attempts++;
-    } while (!ok && attempts < 80);
-    usedPos.push({ x, y });
-
-    const cfg = EGG_CONFIGS[i];
-    const egg = document.createElement('div');
-    egg.className = 'egg';
-    egg.style.left = x + '%';
-    egg.style.top = y + '%';
-
-    const shell = document.createElement('div');
-    shell.className = 'egg-shell';
-    shell.style.background = cfg.gradient;
-
-    const pattern = document.createElement('div');
-    pattern.className = 'egg-pattern';
-    pattern.style.background = getPattern(cfg.pattern, cfg.color);
-
-    shell.appendChild(pattern);
-    egg.appendChild(shell);
-
-    // Crack halves (hidden, shown on crack)
-    const topHalf = document.createElement('div');
-    topHalf.className = 'crack-half top';
-    topHalf.style.background = cfg.gradient;
-    egg.appendChild(topHalf);
-
-    const bottomHalf = document.createElement('div');
-    bottomHalf.className = 'crack-half bottom';
-    bottomHalf.style.background = cfg.gradient;
-    egg.appendChild(bottomHalf);
-
-    // Prize
-    const prize = document.createElement('div');
-    prize.className = 'egg-prize';
-    prize.textContent = cfg.prize;
-    egg.appendChild(prize);
-
-    egg.dataset.index = i;
-    egg.addEventListener('click', (e) => collectEgg(e, i));
-    world.appendChild(egg);
-    eggs.push({ el: egg, found: false, x, y });
+  for(let i=0;i<35;i++){
+    const b=document.createElement('div');b.className='gblade';
+    b.style.position='absolute';b.style.left=rand(0,100)+'%';
+    b.style.top=(rand(52,58))+'%'; // just above ground line
+    b.style.height=rand(18,45)+'px';
+    b.style.background='linear-gradient(0deg,#3a8528,'+['#5cb945','#4ca832','#6fd455','#3d8c2e'][randInt(0,3)]+')';
+    b.style.animationDelay=rand(0,2)+'s';b.style.animationDuration=rand(2,4)+'s';
+    b.style.zIndex='7';
+    world.appendChild(b);
   }
 
-  // Create fences (5 fence sections)
-  fences = [];
-  const fencePositions = [8, 25, 42, 60, 78];
-  for (let i = 0; i < 5; i++) {
-    const f = createFence(world, fencePositions[i], randInt(100, 140), randInt(60, 85));
-    fences.push({ el: f, visible: false });
-  }
-
-  // Basket in HUD
-  const basket = document.getElementById('basket');
-  basket.innerHTML = '';
-  for (let i = 0; i < 12; i++) {
-    const slot = document.createElement('div');
-    slot.className = 'basket-egg-slot';
-    slot.style.background = EGG_CONFIGS[i].gradient;
-    slot.id = 'basket-' + i;
-    basket.appendChild(slot);
-  }
-}
-
-// ---- FENCE LOGIC ----
-function startFenceCycle() {
-  if (fenceInterval) clearInterval(fenceInterval);
-  const status = document.getElementById('fence-status');
-
-  function cycleFences() {
-    if (!gameActive) return;
-
-    // Show 2-3 random fences
-    const count = randInt(2, 3);
-    const indices = [];
-    while (indices.length < count) {
-      const idx = randInt(0, fences.length - 1);
-      if (!indices.includes(idx)) indices.push(idx);
+  // Trees (ground-based, can be obstacles)
+  for(let i=0;i<P.treeCount;i++){
+    const t=document.createElement('div');t.className='tree';
+    const tx=rand(4,90);
+    t.style.left=tx+'%';
+    t.style.top=rand(40,65)+'%';
+    const tw=rand(40,70), th=rand(50,80);
+    const trunk=document.createElement('div');trunk.className='tree-trunk';
+    trunk.style.width=rand(10,16)+'px';trunk.style.height=th*0.5+'px';
+    t.appendChild(trunk);
+    const top1=document.createElement('div');top1.className='tree-top';
+    top1.style.width=tw+'px';top1.style.height=tw*0.85+'px';
+    top1.style.left='50%';top1.style.transform='translateX(-50%)';
+    top1.style.bottom=th*0.35+'px';
+    t.appendChild(top1);
+    const top2=document.createElement('div');top2.className='tree-top dark';
+    top2.style.width=tw*0.7+'px';top2.style.height=tw*0.6+'px';
+    top2.style.left='50%';top2.style.transform='translateX(-50%)';
+    top2.style.bottom=th*0.55+'px';
+    t.appendChild(top2);
+    if(P.treesAsObstacles){
+      const bl=document.createElement('div');bl.className='tree-blocker';
+      bl.style.width=tw+'px';bl.style.height=(th+tw*0.5)+'px';
+      bl.style.left='50%';bl.style.transform='translateX(-50%)';
+      bl.style.bottom='0';
+      t.appendChild(bl);
     }
-
-    // Hide all first
-    fences.forEach(f => { f.el.className = 'fence hidden'; f.visible = false; });
-
-    // Show selected
-    status.textContent = 'Fences up! Wait...';
-    status.style.opacity = '1';
-    indices.forEach(idx => {
-      fences[idx].el.className = 'fence visible';
-      fences[idx].visible = true;
-    });
-
-    // After a few seconds, hide them
-    setTimeout(() => {
-      if (!gameActive) return;
-      fences.forEach(f => { f.el.className = 'fence hidden'; f.visible = false; });
-      status.textContent = 'Fences down! Go go go!';
-      setTimeout(() => { status.style.opacity = '0.5'; }, 1000);
-    }, randInt(2500, 4000));
+    t.style.width=tw+'px';t.style.height=(th+tw)+'px';
+    world.appendChild(t);
   }
 
-  // First fence appears after 3 seconds
-  setTimeout(() => {
-    cycleFences();
-    fenceInterval = setInterval(cycleFences, randInt(5000, 7000));
-  }, 3000);
+  // Place 12 eggs on the ground
+  eggs=[];stolenEggs=[];
+  const usedPos=[];
+  for(let i=0;i<12;i++){
+    let x,y,ok,att=0;
+    do{x=rand(4,90);y=rand(55,78);ok=!usedPos.some(p=>Math.abs(p.x-x)<7&&Math.abs(p.y-y)<7);att++}while(!ok&&att<80);
+    usedPos.push({x,y});
+    const cfg=EGGS[i];
+    const egg=document.createElement('div');egg.className='egg';egg.style.left=x+'%';egg.style.top=y+'%';
+    const sh=document.createElement('div');sh.className='eshell';sh.style.background=cfg.grad;
+    const pt=document.createElement('div');pt.className='epat';pt.style.background=pat(cfg.pat);
+    sh.appendChild(pt);egg.appendChild(sh);
+    const cht=document.createElement('div');cht.className='chalf top';cht.style.background=cfg.grad;
+    const chb=document.createElement('div');chb.className='chalf bot';chb.style.background=cfg.grad;
+    egg.appendChild(cht);egg.appendChild(chb);
+    const pr=document.createElement('div');pr.className='eprize';pr.textContent=cfg.prize;
+    egg.appendChild(pr);
+    egg.dataset.index=i;
+    egg.addEventListener('click',e=>collectEgg(e,i));
+    world.appendChild(egg);
+    eggs.push({el:egg,found:false,stolen:false,x,y});
+  }
+
+  // Fences
+  fenceEls=[];
+  const P_fc=P.fenceCount;
+  const fenceSpacing=90/P_fc;
+  for(let i=0;i<P_fc;i++){
+    const f=document.createElement('div');f.className='fence tall';
+    const fx=rand(i*fenceSpacing+2,(i+1)*fenceSpacing);
+    f.style.left=fx+'%';
+    f.style.bottom='16%';
+    const fw=randInt(80,130);
+    const fh=randInt(P.fenceMinH,P.fenceMaxH);
+    f.style.width=fw+'px';
+    f.style.height=fh+'px';
+    f.dataset.fullH=fh;
+    // Build fence visuals
+    const inner=document.createElement('div');inner.className='fence-inner';
+    const pcount=Math.ceil(fw/30);
+    for(let j=0;j<pcount;j++){
+      const fp=document.createElement('div');fp.className='fpost';
+      fp.style.height='100%';fp.style.left=(j*(fw/(pcount-1)))+'px';
+      inner.appendChild(fp);
+    }
+    const r1=document.createElement('div');r1.className='frail';r1.style.top='20%';inner.appendChild(r1);
+    const r2=document.createElement('div');r2.className='frail';r2.style.top='55%';inner.appendChild(r2);
+    const r3=document.createElement('div');r3.className='frail';r3.style.top='85%';inner.appendChild(r3);
+    f.appendChild(inner);
+    // Blocker (blocks clicks when tall)
+    const bl=document.createElement('div');bl.className='fence-blocker';
+    bl.style.height=fh+'px';
+    f.appendChild(bl);
+    world.appendChild(f);
+    fenceEls.push({el:f,fullH:fh,isTall:true,speed:rand(0.7,1.3)});
+  }
+
+  // Basket
+  const basket=document.getElementById('basket');basket.innerHTML='';
+  for(let i=0;i<12;i++){
+    const sl=document.createElement('div');sl.className='bslot';
+    sl.style.background=EGGS[i].grad;sl.id='bs-'+i;
+    basket.appendChild(sl);
+  }
 }
 
-// ---- GAME LOGIC ----
-function startGame() {
-  found = 0;
-  score = 0;
-  seconds = 0;
-  hintsLeft = 3;
-  gameActive = true;
+// --- FENCE CYCLE ---
+function startFences(){
+  clearFenceTimers();
+  const P=getLevelParams(currentLevel);
+  fenceEls.forEach((f,i)=>{
+    function cycle(){
+      if(!gameActive)return;
+      // Shrink down (cartoon style)
+      f.el.style.height='12px';
+      f.el.querySelector('.fence-blocker').style.height='12px';
+      f.el.classList.remove('tall');f.el.classList.add('short');
+      f.isTall=false;
+      sfxFence();
+      toast('Fence down! Quick!');
+      const downTime=rand(P.fenceDownMin,P.fenceDownMax)/f.speed;
+      const upTimer=setTimeout(()=>{
+        if(!gameActive)return;
+        f.el.style.height=f.fullH+'px';
+        f.el.querySelector('.fence-blocker').style.height=f.fullH+'px';
+        f.el.classList.remove('short');f.el.classList.add('tall');
+        f.isTall=true;
+        sfxFence();
+        const upTime=rand(P.fenceUpMin,P.fenceUpMax)/f.speed;
+        const nextTimer=setTimeout(()=>cycle(),upTime);
+        fenceTimers.push(nextTimer);
+      },downTime);
+      fenceTimers.push(upTimer);
+    }
+    // Stagger start
+    const startDelay=rand(1500,4000)+i*rand(500,1500);
+    const t=setTimeout(()=>cycle(),startDelay);
+    fenceTimers.push(t);
+  });
+}
+function clearFenceTimers(){fenceTimers.forEach(t=>clearTimeout(t));fenceTimers=[];}
 
-  document.getElementById('count').textContent = '0';
-  document.getElementById('timer').textContent = '0:00';
-  document.getElementById('hints-left').textContent = '3';
+// --- BIRD SYSTEM ---
+function startBirds(){
+  clearBirdTimers();
+  const P=getLevelParams(currentLevel);
+  if(!P.birdEnabled)return;
+  function scheduleBird(){
+    if(!gameActive)return;
+    const delay=rand(P.birdIntervalMin,P.birdIntervalMax);
+    const t=setTimeout(()=>{
+      if(!gameActive)return;
+      spawnBird();
+      scheduleBird();
+    },delay);
+    birdTimers.push(t);
+  }
+  scheduleBird();
+}
+function clearBirdTimers(){birdTimers.forEach(t=>clearTimeout(t));birdTimers=[];}
+
+function spawnBird(){
+  // Find an unfound, unstolen egg
+  const targets=eggs.filter(e=>!e.found&&!e.stolen);
+  if(targets.length===0)return;
+  const target=targets[randInt(0,targets.length-1)];
+  const idx=eggs.indexOf(target);
+
+  const world=document.getElementById('game-world');
+  const bird=document.createElement('div');bird.className='bird';
+  bird.innerHTML='🦅';
+  // Start from top-left or top-right
+  const startX=Math.random()>0.5?-5:105;
+  bird.style.left=startX+'%';bird.style.top='5%';
+  bird.style.position='absolute';
+
+  // Calculate delta to egg
+  const dx=target.x-parseFloat(bird.style.left);
+  const dy=target.y-5;
+  bird.style.setProperty('--dx',dx+'vw');
+  bird.style.setProperty('--dy',dy+'vh');
+
+  let clickCount=0;
+  let birdDone=false;
+
+  bird.addEventListener('dblclick',(e)=>{
+    if(birdDone)return;
+    e.stopPropagation();
+    birdDone=true;
+    sfxBirdCatch();
+    // Recover the egg
+    if(target.stolen){
+      target.stolen=false;
+      target.el.classList.remove('stolen');
+      target.el.style.display='';
+      toast('You saved the egg from the bird!');
+      createSparkles(e.clientX,e.clientY);
+    }
+    bird.remove();
+  });
+
+  bird.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    // Need double-click, single click just makes it squawk
+    sfxBird();
+    bird.style.transform+=' scale(1.1)';
+    setTimeout(()=>{if(bird.parentNode)bird.style.transform=bird.style.transform.replace(' scale(1.1)','')},150);
+  });
+
+  sfxBird();
+  toast('A bird is swooping in! Double-click it!');
+  world.appendChild(bird);
+
+  // Animate: fly to egg, grab it, fly away
+  bird.classList.add('bird-swoop');
+
+  // At 40% of animation (when bird reaches egg), steal it
+  setTimeout(()=>{
+    if(birdDone||!gameActive)return;
+    if(!target.found&&!target.stolen){
+      target.stolen=true;
+      target.el.classList.add('stolen');
+      stolenEggs.push(idx);
+      // Add carry indicator on bird
+      const carry=document.createElement('div');carry.className='bird-carry';
+      carry.textContent=EGGS[idx].prize;
+      bird.appendChild(carry);
+    }
+  },800);
+
+  // Remove bird after animation
+  setTimeout(()=>{
+    if(bird.parentNode)bird.remove();
+  },2200);
+}
+
+// --- GAME LOGIC ---
+function initGame(){
+  initAudio();
+  currentLevel=1;
+  totalScore=0;
+  showLevelIntro();
+}
+
+function showLevelIntro(){
+  document.getElementById('level-title').textContent='Level '+currentLevel;
+  document.getElementById('level-desc').textContent=LEVEL_DESCS[currentLevel-1]||'Good luck!';
+  showScreen('level-screen');
+  sfxLevelUp();
+}
+
+function startLevel(){
+  found=0;score=0;seconds=0;
+  const P=getLevelParams(currentLevel);
+  hintsLeft=P.hintsAvail;
+  gameActive=true;stolenEggs=[];
+
+  document.getElementById('count').textContent='0';
+  document.getElementById('timer').textContent='0:00';
+  document.getElementById('hints-left').textContent=hintsLeft;
+  document.getElementById('hud-level').textContent=currentLevel;
+  document.getElementById('hud-score').textContent=totalScore;
 
   buildScene();
   showScreen('game-screen');
-  startFenceCycle();
+  startFences();
+  startBirds();
+  startMusic();
 
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
+  if(timerInterval)clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{
+    if(!gameActive)return;
     seconds++;
-    document.getElementById('timer').textContent = formatTime(seconds);
-  }, 1000);
+    document.getElementById('timer').textContent=fmt(seconds);
+  },1000);
 }
 
-function collectEgg(e, index) {
-  if (!gameActive || eggs[index].found) return;
+function collectEgg(e,idx){
+  if(!gameActive||eggs[idx].found||eggs[idx].stolen)return;
   e.stopPropagation();
-
-  const egg = eggs[index].el;
-
-  // Crack animation sequence
-  eggs[index].found = true;
+  sfxClick();
+  const egg=eggs[idx].el;
+  eggs[idx].found=true;
   egg.classList.add('cracking');
-
-  setTimeout(() => {
-    egg.classList.remove('cracking');
-    egg.classList.add('cracked');
-    found++;
-    score += CLUES[index].points;
-    document.getElementById('count').textContent = found;
-
-    const basketSlot = document.getElementById('basket-' + index);
-    if (basketSlot) setTimeout(() => basketSlot.classList.add('collected'), 200);
-
-    createSparkles(e.clientX, e.clientY);
-    setTimeout(() => showClue(index), 600);
-  }, 350);
+  sfxCrack();
+  setTimeout(()=>{
+    egg.classList.remove('cracking');egg.classList.add('cracked');
+    found++;score+=CLUES[idx].pts;totalScore+=CLUES[idx].pts;
+    document.getElementById('count').textContent=found;
+    document.getElementById('hud-score').textContent=totalScore;
+    const bs=document.getElementById('bs-'+idx);
+    if(bs)setTimeout(()=>bs.classList.add('collected'),150);
+    sfxPrize();
+    createSparkles(e.clientX,e.clientY);
+    setTimeout(()=>showClue(idx),500);
+  },350);
 }
 
-function createSparkles(x, y) {
-  const emojis = ['✨', '⭐', '🌟', '💫', '🎉'];
-  for (let i = 0; i < 6; i++) {
-    const s = document.createElement('div');
-    s.className = 'sparkle';
-    s.textContent = emojis[i % emojis.length];
-    s.style.left = (x + rand(-35, 35)) + 'px';
-    s.style.top = (y + rand(-35, 35)) + 'px';
-    s.style.animationDelay = (i * 0.08) + 's';
-    document.body.appendChild(s);
-    setTimeout(() => s.remove(), 1000);
+function createSparkles(x,y){
+  const em=['✨','⭐','🌟','💫','🎉'];
+  for(let i=0;i<6;i++){
+    const s=document.createElement('div');s.className='sparkle';
+    s.textContent=em[i%em.length];
+    s.style.left=(x+rand(-30,30))+'px';s.style.top=(y+rand(-30,30))+'px';
+    s.style.animationDelay=(i*0.07)+'s';
+    document.body.appendChild(s);setTimeout(()=>s.remove(),900);
   }
 }
 
-function showClue(index) {
-  const cfg = EGG_CONFIGS[index];
-  document.getElementById('clue-egg-icon').textContent = cfg.prize;
-  document.getElementById('clue-text').textContent = CLUES[index].text;
-  document.getElementById('clue-points').textContent = '+' + CLUES[index].points + ' points!';
-  document.getElementById('overlay').style.display = 'block';
-  document.getElementById('clue-popup').style.display = 'block';
+function showClue(idx){
+  document.getElementById('popup-icon').textContent=EGGS[idx].prize;
+  document.getElementById('popup-text').textContent=CLUES[idx].text;
+  document.getElementById('popup-pts').textContent='+'+CLUES[idx].pts+' points!';
+  document.getElementById('overlay').style.display='block';
+  document.getElementById('clue-popup').style.display='block';
 }
 
-function closeClue() {
-  document.getElementById('overlay').style.display = 'none';
-  document.getElementById('clue-popup').style.display = 'none';
-  if (found >= 12) setTimeout(showWin, 300);
+function closeClue(){
+  document.getElementById('overlay').style.display='none';
+  document.getElementById('clue-popup').style.display='none';
+  // Check if all non-stolen eggs found
+  const findable=eggs.filter(e=>!e.stolen);
+  const foundAll=findable.every(e=>e.found);
+  if(foundAll&&found>=12-stolenEggs.length){
+    setTimeout(showLevelWin,300);
+  }
 }
 
-function useHint() {
-  if (hintsLeft <= 0 || !gameActive) return;
-  const unfound = eggs.filter(e => !e.found);
-  if (unfound.length === 0) return;
+function useHint(){
+  if(hintsLeft<=0||!gameActive)return;
+  const unfound=eggs.filter(e=>!e.found&&!e.stolen);
+  if(unfound.length===0)return;
   hintsLeft--;
-  document.getElementById('hints-left').textContent = hintsLeft;
-  const target = unfound[Math.floor(Math.random() * unfound.length)];
-  target.el.classList.add('hint-glow');
-  setTimeout(() => target.el.classList.remove('hint-glow'), 3500);
+  document.getElementById('hints-left').textContent=hintsLeft;
+  const tgt=unfound[randInt(0,unfound.length-1)];
+  tgt.el.classList.add('hglow');
+  sfxHint();
+  setTimeout(()=>tgt.el.classList.remove('hglow'),3500);
 }
 
-function showWin() {
-  gameActive = false;
-  clearInterval(timerInterval);
-  clearInterval(fenceInterval);
-  const t = formatTime(seconds);
-  let rating = '';
-  if (seconds < 30) rating = 'Incredible! Lightning fast!';
-  else if (seconds < 60) rating = 'Amazing hunter!';
-  else if (seconds < 120) rating = 'Great job!';
-  else rating = 'You did it! Persistence wins!';
-  document.getElementById('win-stats').innerHTML = 'Time: <strong>' + t + '</strong><br>' + rating;
-  document.getElementById('win-score').innerHTML = 'Total Score: <strong>' + score + ' points</strong>';
+function showLevelWin(){
+  gameActive=false;
+  clearInterval(timerInterval);clearFenceTimers();clearBirdTimers();stopMusic();
+  const t=fmt(seconds);
+  let rating='';
+  const stolenCount=stolenEggs.filter(i=>!eggs[i].found).length;
+  if(seconds<20)rating='Incredible speed!';
+  else if(seconds<45)rating='Amazing hunter!';
+  else if(seconds<90)rating='Great job!';
+  else rating='Persistence wins!';
+
+  const isLastLevel=currentLevel>=10;
+  document.getElementById('win-title').textContent=isLastLevel?'🎉 You Beat All 10 Levels! 🎉':'Level '+currentLevel+' Complete!';
+  document.getElementById('win-stats').innerHTML='Time: <strong>'+t+'</strong><br>'+rating+(stolenCount>0?'<br>Birds stole '+stolenCount+' egg(s)!':'');
+  document.getElementById('win-score').innerHTML='Level Score: <strong>'+score+'</strong> | Total: <strong>'+totalScore+'</strong>';
+  document.getElementById('win-btn').textContent=isLastLevel?'Play Again!':'Next Level';
+  document.getElementById('win-btn').onclick=isLastLevel?()=>{currentLevel=1;totalScore=0;showLevelIntro()}:nextLevel;
+
   showScreen('win-screen');
+  isLastLevel?sfxWin():sfxLevelUp();
   launchConfetti();
 }
 
-function launchConfetti() {
-  const items = ['🎉','🥳','🎊','🐣','🌈','🐰','✨','🎀','💐','👑'];
-  for (let i = 0; i < 35; i++) {
-    setTimeout(() => {
-      const c = document.createElement('div');
-      c.style.cssText = 'position:fixed;font-size:' + rand(1.5,3) + 'rem;left:' + rand(5,95) + '%;top:-5%;z-index:1000;pointer-events:none;animation:confettiFall ' + rand(2,4) + 's ease forwards;';
-      c.textContent = items[i % items.length];
-      document.body.appendChild(c);
-      setTimeout(() => c.remove(), 5000);
-    }, i * 90);
+function nextLevel(){
+  currentLevel++;
+  showLevelIntro();
+}
+
+function launchConfetti(){
+  const items=['🎉','🥳','🎊','🐣','🌈','🐰','✨','🎀','💐','👑'];
+  for(let i=0;i<30;i++){
+    setTimeout(()=>{
+      const c=document.createElement('div');
+      c.style.cssText='position:fixed;font-size:'+rand(1.3,2.5)+'rem;left:'+rand(5,95)+'%;top:-5%;z-index:1000;pointer-events:none;animation:cfall '+rand(2,4)+'s ease forwards';
+      c.textContent=items[i%items.length];
+      document.body.appendChild(c);setTimeout(()=>c.remove(),5000);
+    },i*80);
   }
-  if (!document.getElementById('confetti-style')) {
-    const s = document.createElement('style');
-    s.id = 'confetti-style';
-    s.textContent = '@keyframes confettiFall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}';
+  if(!document.getElementById('cfall-style')){
+    const s=document.createElement('style');s.id='cfall-style';
+    s.textContent='@keyframes cfall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}';
     document.head.appendChild(s);
   }
 }
-
-function restartGame() { startGame(); }
 </script>
 </body>
 </html>
