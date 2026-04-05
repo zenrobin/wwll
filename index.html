@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Easter Egg Hunt - Family Game</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    background: #87CEEB;
+  }
+
+  /* --- Screens --- */
+  .screen { display: none; position: absolute; inset: 0; }
+  .screen.active { display: flex; }
+
+  /* --- Start Screen --- */
+  #start-screen {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #87CEEB 0%, #98FB98 70%, #228B22 100%);
+    text-align: center;
+    gap: 20px;
+  }
+
+  #start-screen h1 {
+    font-size: 3rem;
+    color: #5D3A1A;
+    text-shadow: 2px 2px 0 #FFD700;
+    animation: bounce 1s ease infinite alternate;
+  }
+
+  @keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-12px); }
+  }
+
+  #start-screen .subtitle {
+    font-size: 1.2rem;
+    color: #3A6B35;
+    max-width: 400px;
+  }
+
+  #start-screen .egg-preview {
+    font-size: 4rem;
+    animation: spin 3s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+
+  .btn {
+    padding: 16px 48px;
+    font-size: 1.4rem;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+
+  .btn:hover { transform: scale(1.08); box-shadow: 0 6px 25px rgba(0,0,0,0.3); }
+  .btn:active { transform: scale(0.95); }
+
+  .btn-play {
+    background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+    color: white;
+  }
+
+  /* --- Game Screen --- */
+  #game-screen {
+    flex-direction: column;
+    background: linear-gradient(180deg, #87CEEB 0%, #98FB98 60%, #228B22 100%);
+    cursor: crosshair;
+  }
+
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    border-bottom: 3px solid #FFD700;
+  }
+
+  #hud .eggs-found { font-size: 1.2rem; color: #5D3A1A; font-weight: bold; }
+  #hud .timer { font-size: 1.2rem; color: #C0392B; font-weight: bold; }
+  #hud .hint-btn {
+    padding: 8px 18px;
+    background: #FFD700;
+    border: 2px solid #DAA520;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9rem;
+  }
+
+  #game-world {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Scene layers */
+  .scene-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* Decorations */
+  .decoration {
+    position: absolute;
+    font-size: 2rem;
+    pointer-events: none;
+  }
+
+  /* Eggs */
+  .egg {
+    position: absolute;
+    font-size: 1.8rem;
+    cursor: pointer;
+    pointer-events: all;
+    transition: transform 0.3s, opacity 0.3s;
+    z-index: 10;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  }
+
+  .egg:hover { transform: scale(1.3); }
+
+  .egg.found {
+    animation: eggFound 0.6s ease forwards;
+    pointer-events: none;
+  }
+
+  @keyframes eggFound {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(2) rotate(20deg); opacity: 1; }
+    100% { transform: scale(0) rotate(360deg); opacity: 0; }
+  }
+
+  .egg.hint-glow {
+    animation: hintPulse 1s ease 3;
+  }
+
+  @keyframes hintPulse {
+    0%, 100% { filter: drop-shadow(0 0 5px gold); }
+    50% { filter: drop-shadow(0 0 25px gold) drop-shadow(0 0 50px gold); }
+  }
+
+  /* Click sparkle */
+  .sparkle {
+    position: absolute;
+    pointer-events: none;
+    font-size: 1.5rem;
+    animation: sparkleAnim 0.8s ease forwards;
+    z-index: 200;
+  }
+
+  @keyframes sparkleAnim {
+    0% { transform: scale(0) rotate(0); opacity: 1; }
+    100% { transform: scale(1.5) rotate(180deg) translateY(-40px); opacity: 0; }
+  }
+
+  /* Clue popup */
+  #clue-popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border: 4px solid #FFD700;
+    border-radius: 20px;
+    padding: 30px;
+    z-index: 500;
+    text-align: center;
+    max-width: 340px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: popIn 0.4s ease;
+  }
+
+  @keyframes popIn {
+    0% { transform: translate(-50%, -50%) scale(0); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+  }
+
+  #clue-popup .egg-icon { font-size: 3rem; }
+  #clue-popup .clue-text { margin: 12px 0; font-size: 1.1rem; color: #5D3A1A; }
+  #clue-popup .clue-points { color: #E67E22; font-weight: bold; }
+
+  #clue-popup .btn-close {
+    margin-top: 12px;
+    padding: 8px 30px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+  }
+
+  /* Overlay dim */
+  #overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 400;
+  }
+
+  /* --- Win Screen --- */
+  #win-screen {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #FFD700 0%, #FFA500 50%, #FF6347 100%);
+    text-align: center;
+    gap: 16px;
+  }
+
+  #win-screen h1 {
+    font-size: 2.8rem;
+    color: white;
+    text-shadow: 2px 2px 0 #C0392B;
+  }
+
+  #win-screen .trophy { font-size: 5rem; animation: spin 2s linear infinite; }
+  #win-screen .stats { font-size: 1.2rem; color: #5D3A1A; }
+
+  .btn-restart {
+    background: linear-gradient(135deg, #4CAF50, #45B7D1);
+    color: white;
+  }
+
+  /* Egg basket */
+  #basket {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px;
+    max-width: 300px;
+  }
+
+  #basket .basket-egg {
+    font-size: 1.6rem;
+    opacity: 0.2;
+    transition: opacity 0.5s, transform 0.5s;
+  }
+
+  #basket .basket-egg.collected {
+    opacity: 1;
+    animation: collectPop 0.5s ease;
+  }
+
+  @keyframes collectPop {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.5); }
+    100% { transform: scale(1); }
+  }
+
+  /* Clouds */
+  .cloud {
+    position: absolute;
+    font-size: 3rem;
+    opacity: 0.7;
+    animation: drift linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes drift {
+    from { transform: translateX(-100px); }
+    to { transform: translateX(calc(100vw + 100px)); }
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    #start-screen h1 { font-size: 2rem; }
+    .btn { padding: 12px 36px; font-size: 1.1rem; }
+    #clue-popup { max-width: 280px; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== START SCREEN ===== -->
+<div id="start-screen" class="screen active">
+  <div class="egg-preview">🥚</div>
+  <h1>Easter Egg Hunt!</h1>
+  <p class="subtitle">
+    Can you find all <strong>12 hidden eggs</strong> scattered across the garden?
+    Tap or click to search — each egg has a fun clue inside!
+  </p>
+  <button class="btn btn-play" onclick="startGame()">Start the Hunt!</button>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="game-screen" class="screen">
+  <div id="hud">
+    <span class="eggs-found">🥚 <span id="count">0</span> / 12</span>
+    <div id="basket"></div>
+    <button class="hint-btn" onclick="useHint()">💡 Hint (<span id="hints-left">3</span>)</button>
+    <span class="timer">⏱ <span id="timer">0:00</span></span>
+  </div>
+  <div id="game-world"></div>
+</div>
+
+<!-- Clue popup -->
+<div id="overlay" onclick="closeClue()"></div>
+<div id="clue-popup">
+  <div class="egg-icon" id="clue-egg-icon">🥚</div>
+  <div class="clue-text" id="clue-text"></div>
+  <div class="clue-points" id="clue-points"></div>
+  <button class="btn-close" onclick="closeClue()">Got it!</button>
+</div>
+
+<!-- ===== WIN SCREEN ===== -->
+<div id="win-screen" class="screen">
+  <div class="trophy">🏆</div>
+  <h1>You Found Them All!</h1>
+  <p class="stats" id="win-stats"></p>
+  <p class="stats" id="win-score"></p>
+  <button class="btn btn-restart" onclick="restartGame()">Play Again!</button>
+</div>
+
+<script>
+// ============================================================
+//  EASTER EGG HUNT GAME
+// ============================================================
+
+const EGG_EMOJIS = ['🥚','🐣','🌈','🎀','💎','🌸','⭐','🦋','🎨','🍫','🐰','✨'];
+const EGG_COLORS = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF6FB7','#C77DFF',
+                    '#45B7D1','#F97316','#EC4899','#8B5CF6','#14B8A6','#F59E0B'];
+
+const CLUES = [
+  { text: "The early bird catches the worm... and this egg!", points: 10 },
+  { text: "Hidden where the flowers bloom brightest!", points: 15 },
+  { text: "Even the bunny almost missed this one!", points: 20 },
+  { text: "Tucked behind the tallest tree in the garden!", points: 15 },
+  { text: "A sparkly surprise near the garden fence!", points: 25 },
+  { text: "Where butterflies dance, eggs hide!", points: 10 },
+  { text: "Peek under the mushroom... surprise!", points: 20 },
+  { text: "This golden egg was worth the search!", points: 30 },
+  { text: "Hidden among the Easter flowers!", points: 15 },
+  { text: "The chocolate bunny was guarding this one!", points: 20 },
+  { text: "A rainbow led you to this treasure!", points: 25 },
+  { text: "The final egg — you're a champion hunter!", points: 50 },
+];
+
+const DECORATIONS = [
+  // Trees
+  { emoji: '🌳', minX: 0, maxX: 95, minY: 20, maxY: 80, size: '3.5rem', count: 6 },
+  // Flowers
+  { emoji: '🌷', minX: 0, maxX: 95, minY: 50, maxY: 90, size: '1.8rem', count: 10 },
+  { emoji: '🌻', minX: 0, maxX: 95, minY: 40, maxY: 85, size: '2rem', count: 5 },
+  { emoji: '🌼', minX: 0, maxX: 95, minY: 55, maxY: 92, size: '1.5rem', count: 8 },
+  // Bushes
+  { emoji: '🌿', minX: 0, maxX: 95, minY: 45, maxY: 88, size: '2.2rem', count: 7 },
+  // Mushrooms
+  { emoji: '🍄', minX: 5, maxX: 90, minY: 60, maxY: 90, size: '1.6rem', count: 4 },
+  // Fence posts
+  { emoji: '🏡', minX: 70, maxX: 95, minY: 15, maxY: 40, size: '3rem', count: 1 },
+  // Butterflies
+  { emoji: '🦋', minX: 5, maxX: 90, minY: 10, maxY: 50, size: '1.4rem', count: 4 },
+  // Bunnies
+  { emoji: '🐰', minX: 5, maxX: 90, minY: 55, maxY: 85, size: '2rem', count: 3 },
+  // Chicks
+  { emoji: '🐥', minX: 10, maxX: 85, minY: 60, maxY: 88, size: '1.5rem', count: 3 },
+];
+
+let eggs = [];
+let found = 0;
+let score = 0;
+let hintsLeft = 3;
+let timerInterval = null;
+let seconds = 0;
+let gameActive = false;
+
+// ---- Helpers ----
+
+function rand(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+// ---- Build Scene ----
+
+function buildScene() {
+  const world = document.getElementById('game-world');
+  world.innerHTML = '';
+
+  // Add clouds
+  for (let i = 0; i < 4; i++) {
+    const cloud = document.createElement('div');
+    cloud.className = 'cloud';
+    cloud.textContent = '☁️';
+    cloud.style.top = rand(2, 20) + '%';
+    cloud.style.left = rand(-5, 80) + '%';
+    cloud.style.animationDuration = rand(20, 40) + 's';
+    cloud.style.animationDelay = rand(0, 15) + 's';
+    cloud.style.fontSize = rand(2.5, 5) + 'rem';
+    world.appendChild(cloud);
+  }
+
+  // Add sun
+  const sun = document.createElement('div');
+  sun.className = 'decoration';
+  sun.textContent = '☀️';
+  sun.style.fontSize = '4rem';
+  sun.style.top = '5%';
+  sun.style.right = '8%';
+  sun.style.left = 'auto';
+  world.appendChild(sun);
+
+  // Add decorations
+  DECORATIONS.forEach(dec => {
+    for (let i = 0; i < dec.count; i++) {
+      const el = document.createElement('div');
+      el.className = 'decoration';
+      el.textContent = dec.emoji;
+      el.style.fontSize = dec.size;
+      el.style.left = rand(dec.minX, dec.maxX) + '%';
+      el.style.top = rand(dec.minY, dec.maxY) + '%';
+      if (dec.emoji === '🦋') {
+        el.style.animation = `drift ${rand(8,15)}s linear infinite`;
+        el.style.animationDelay = rand(0,5) + 's';
+      }
+      world.appendChild(el);
+    }
+  });
+
+  // Place eggs - hidden near decorations
+  eggs = [];
+  const usedPositions = [];
+
+  for (let i = 0; i < 12; i++) {
+    let x, y, tooClose;
+    let attempts = 0;
+    do {
+      x = rand(5, 90);
+      y = rand(25, 88);
+      tooClose = usedPositions.some(p =>
+        Math.abs(p.x - x) < 8 && Math.abs(p.y - y) < 8
+      );
+      attempts++;
+    } while (tooClose && attempts < 50);
+
+    usedPositions.push({ x, y });
+
+    const egg = document.createElement('div');
+    egg.className = 'egg';
+    egg.textContent = EGG_EMOJIS[i];
+    egg.style.left = x + '%';
+    egg.style.top = y + '%';
+
+    // Make some eggs harder to see (smaller, slightly transparent)
+    const difficulty = Math.random();
+    if (difficulty < 0.3) {
+      egg.style.fontSize = '1.2rem';
+      egg.style.opacity = '0.7';
+    } else if (difficulty < 0.6) {
+      egg.style.fontSize = '1.5rem';
+      egg.style.opacity = '0.8';
+    }
+
+    egg.dataset.index = i;
+    egg.addEventListener('click', (e) => collectEgg(e, i));
+
+    world.appendChild(egg);
+    eggs.push({ el: egg, found: false, x, y });
+  }
+
+  // Build basket
+  const basket = document.getElementById('basket');
+  basket.innerHTML = '';
+  for (let i = 0; i < 12; i++) {
+    const slot = document.createElement('span');
+    slot.className = 'basket-egg';
+    slot.textContent = EGG_EMOJIS[i];
+    slot.id = `basket-${i}`;
+    basket.appendChild(slot);
+  }
+}
+
+// ---- Game Logic ----
+
+function startGame() {
+  found = 0;
+  score = 0;
+  seconds = 0;
+  hintsLeft = 3;
+  gameActive = true;
+
+  document.getElementById('count').textContent = '0';
+  document.getElementById('timer').textContent = '0:00';
+  document.getElementById('hints-left').textContent = '3';
+
+  buildScene();
+  showScreen('game-screen');
+
+  timerInterval = setInterval(() => {
+    seconds++;
+    document.getElementById('timer').textContent = formatTime(seconds);
+  }, 1000);
+}
+
+function collectEgg(e, index) {
+  if (!gameActive || eggs[index].found) return;
+
+  e.stopPropagation();
+  eggs[index].found = true;
+  eggs[index].el.classList.add('found');
+  found++;
+  score += CLUES[index].points;
+
+  document.getElementById('count').textContent = found;
+
+  // Basket animation
+  const basketEgg = document.getElementById(`basket-${index}`);
+  if (basketEgg) {
+    setTimeout(() => basketEgg.classList.add('collected'), 300);
+  }
+
+  // Create sparkles at click position
+  createSparkles(e.clientX, e.clientY);
+
+  // Show clue
+  setTimeout(() => showClue(index), 400);
+}
+
+function createSparkles(x, y) {
+  const sparkles = ['✨', '⭐', '🌟', '💫', '🎉'];
+  for (let i = 0; i < 5; i++) {
+    const s = document.createElement('div');
+    s.className = 'sparkle';
+    s.textContent = sparkles[i % sparkles.length];
+    s.style.left = (x + rand(-30, 30)) + 'px';
+    s.style.top = (y + rand(-30, 30)) + 'px';
+    s.style.animationDelay = (i * 0.1) + 's';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 1000);
+  }
+}
+
+function showClue(index) {
+  document.getElementById('clue-egg-icon').textContent = EGG_EMOJIS[index];
+  document.getElementById('clue-text').textContent = CLUES[index].text;
+  document.getElementById('clue-points').textContent = `+${CLUES[index].points} points!`;
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('clue-popup').style.display = 'block';
+}
+
+function closeClue() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('clue-popup').style.display = 'none';
+
+  if (found >= 12) {
+    setTimeout(showWin, 300);
+  }
+}
+
+function useHint() {
+  if (hintsLeft <= 0 || !gameActive) return;
+
+  // Find a random unfound egg
+  const unfound = eggs.filter(e => !e.found);
+  if (unfound.length === 0) return;
+
+  hintsLeft--;
+  document.getElementById('hints-left').textContent = hintsLeft;
+
+  const target = unfound[Math.floor(Math.random() * unfound.length)];
+  target.el.classList.add('hint-glow');
+  setTimeout(() => target.el.classList.remove('hint-glow'), 3000);
+}
+
+function showWin() {
+  gameActive = false;
+  clearInterval(timerInterval);
+
+  const timeStr = formatTime(seconds);
+  let rating = '';
+  if (seconds < 30) rating = 'Incredible! Lightning fast! ⚡';
+  else if (seconds < 60) rating = 'Amazing hunter! 🌟';
+  else if (seconds < 120) rating = 'Great job! 🎉';
+  else rating = 'You did it! Persistence wins! 💪';
+
+  document.getElementById('win-stats').innerHTML =
+    `Time: <strong>${timeStr}</strong><br>${rating}`;
+  document.getElementById('win-score').innerHTML =
+    `Total Score: <strong>${score} points</strong>`;
+
+  showScreen('win-screen');
+
+  // Confetti!
+  launchConfetti();
+}
+
+function launchConfetti() {
+  const confettiEmojis = ['🎉','🥳','🎊','🐣','🌈','🥚','🐰','✨','🎀','💐'];
+  for (let i = 0; i < 30; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.style.cssText = `
+        position: fixed;
+        font-size: ${rand(1.5, 3)}rem;
+        left: ${rand(5, 95)}%;
+        top: -5%;
+        z-index: 1000;
+        pointer-events: none;
+        animation: confettiFall ${rand(2, 4)}s ease forwards;
+      `;
+      c.textContent = confettiEmojis[i % confettiEmojis.length];
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 5000);
+    }, i * 100);
+  }
+
+  // Add confetti animation
+  if (!document.getElementById('confetti-style')) {
+    const style = document.createElement('style');
+    style.id = 'confetti-style';
+    style.textContent = `
+      @keyframes confettiFall {
+        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+function restartGame() {
+  startGame();
+}
+</script>
+</body>
+</html>
